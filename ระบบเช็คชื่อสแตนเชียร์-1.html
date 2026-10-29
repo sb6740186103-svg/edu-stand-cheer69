@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ระบบเช็คชื่อ 10 แถว</title>
+<style>
+:root{--blue:#4361ee;--pink:#ff6b9a;--yellow:#ffd166;--green:#06d6a0;--ink:#243047;--bg:#f4f7ff}
+*{box-sizing:border-box}
+body{margin:0;font-family:Tahoma,Arial,sans-serif;background:linear-gradient(135deg,#eef4ff,#fff2f7);color:var(--ink)}
+header{padding:24px 16px;background:linear-gradient(120deg,#4361ee,#8b5cf6);color:#fff;text-align:center}
+header h1{margin:0 0 8px;font-size:clamp(22px,4vw,32px)}header p{margin:0;opacity:.95}
+main{max-width:1200px;margin:20px auto;padding:0 14px 40px}
+.panel{background:#fff;border-radius:18px;padding:18px;margin-bottom:16px;box-shadow:0 8px 25px #344a7a12}
+h2{font-size:19px;margin:0 0 14px}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.stat{padding:14px;border-radius:14px;background:#f2f5ff}.stat:nth-child(2){background:#fff0f5}.stat:nth-child(3){background:#e9fff7}.stat:nth-child(4){background:#fff8e6}
+.stat strong{display:block;font-size:25px;margin-top:5px}
+.formgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+label{font-size:13px;font-weight:bold;display:block;margin-bottom:5px}
+input,select,button{font:inherit}
+input,select{width:100%;padding:10px;border:1px solid #d8deed;border-radius:10px;background:#fff;min-width:0}
+button{border:0;border-radius:10px;padding:10px 14px;font-weight:bold;cursor:pointer}
+.primary{background:var(--blue);color:#fff}.success{background:#06b889;color:#fff}.warning{background:#ffcf5c;color:#473600}.danger{background:#ffe4e9;color:#a51c3d}.muted{background:#edf0f8;color:#34415b}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.note{font-size:13px;line-height:1.6;color:#5a6680}
+.rows{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.rowcard{border:1px solid #e1e7f5;border-radius:14px;overflow:hidden}
+.rowhead{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:#eef2ff;font-weight:bold}
+.rowhead small{font-weight:normal;color:#64708a}
+.person{display:grid;grid-template-columns:30px minmax(0,1fr) 92px;gap:8px;align-items:center;padding:9px 12px;border-top:1px solid #edf0f7}
+.person .num{font-size:12px;color:#77819a}
+.person .name{font-size:14px;overflow-wrap:anywhere}
+.person .meta{display:block;font-size:11px;color:#77819a;margin-top:3px}
+.badge{font-size:12px;padding:6px 8px;border-radius:8px;text-align:center;background:#edf0f8}
+.badge.present{background:#d9fff1;color:#087a58}.badge.absent{background:#ffe2e7;color:#a51c3d}.badge.pending{background:#fff3cf;color:#7b5b00}.badge.locked{background:#e9eaf0;color:#5a6070}
+.statusline{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
+.lockednote{color:#a51c3d;font-size:13px;font-weight:bold}
+footer{text-align:center;color:#6b7590;font-size:12px;padding:0 12px 25px}
+@media(max-width:760px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.formgrid{grid-template-columns:repeat(2,minmax(0,1fr))}.rows{grid-template-columns:1fr}}
+@media(max-width:420px){.formgrid{grid-template-columns:1fr}.person{grid-template-columns:24px minmax(0,1fr) 82px;padding:8px}.panel{padding:13px}}
+</style>
+</head>
+<body>
+<header>
+  <h1>🎉 ระบบเช็คชื่อสแตนเชียร์</h1>
+  <p>10 แถว · แถวละ 10 คน · บันทึกวันเวลาอัตโนมัติ</p>
+</header>
+<main>
+  <section class="panel">
+    <div class="statusline"><h2>📊 สรุปการเข้าร่วม</h2><span id="modeLabel" class="lockednote">🔒 โหมดดูข้อมูล</span></div>
+    <div class="stats">
+      <div class="stat">จำนวนทั้งหมด<strong id="total">100</strong></div>
+      <div class="stat">เช็คชื่อแล้ว<strong id="checked">0</strong></div>
+      <div class="stat">มาเข้าร่วม<strong id="present">0</strong></div>
+      <div class="stat">ร้อยละการเข้าร่วม<strong id="percent">0%</strong></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>🔐 เข้าสู่ระบบผู้ดูแล</h2>
+    <div class="formgrid">
+      <div><label for="password">รหัสผ่านผู้ดูแล</label><input id="password" type="password" placeholder="กรอกรหัสผ่าน"></div>
+      <div style="display:flex;align-items:end"><button class="primary" id="loginBtn" style="width:100%">เข้าสู่ระบบ</button></div>
+      <div style="display:flex;align-items:end"><button class="muted" id="logoutBtn" style="width:100%">ออกจากระบบ</button></div>
+      <div style="display:flex;align-items:end"><button class="warning" id="changePassBtn" style="width:100%">เปลี่ยนรหัสผ่าน</button></div>
+    </div>
+    <p class="note">รหัสผ่านเริ่มต้น: <b>1234</b> — โปรดเปลี่ยนก่อนใช้งานจริง</p>
+    <p class="note">เมื่อกด “บันทึกและล็อก” สถานะของแถวนั้นจะถูกล็อกในหน้าเว็บนี้และไม่สามารถเปลี่ยนได้ตามปกติ</p>
+    <div id="message" class="note" role="status"></div>
+  </section>
+
+  <section class="panel">
+    <h2>✍️ เพิ่มหรือแก้ไขรายชื่อ (ต้องเข้าสู่ระบบ)</h2>
+    <div class="formgrid">
+      <div><label for="personRow">แถว</label><select id="personRow"></select></div>
+      <div><label for="personNo">ลำดับในแถว</label><select id="personNo"></select></div>
+      <div><label for="personName">ชื่อ–นามสกุล</label><input id="personName" placeholder="กรอกชื่อ–นามสกุล"></div>
+      <div><label for="personMajor">สาขาวิชา</label><input id="personMajor" placeholder="กรอกสาขาวิชา"></div>
+    </div>
+    <div class="actions"><button class="primary" id="savePerson">บันทึกรายชื่อ</button><button class="muted" id="clearForm">ล้างช่องกรอก</button></div>
+  </section>
+
+  <section class="panel">
+    <div class="statusline"><h2>🗂️ ตารางเช็คชื่อ</h2><span class="note">เลือกสถานะแล้วกดบันทึกและล็อกเป็นรายแถว</span></div>
+    <div id="rows" class="rows"></div>
+    <div class="actions"><button class="success" id="exportBtn">ส่งออกข้อมูล CSV</button><button class="danger" id="resetBtn">ล้างข้อมูลทั้งหมด</button></div>
+    <p class="note">การส่งออก CSV เปิดได้ด้วย Excel หรือ Google Sheets ส่วนการล้างข้อมูลต้องยืนยันด้วยรหัสผ่าน</p>
+  </section>
+</main>
+<footer>ข้อมูลในตัวอย่างนี้จัดเก็บในเบราว์เซอร์เครื่องที่เปิดใช้งาน (localStorage)</footer>
+<script>
+const DEFAULT_PASSWORD = "1234";
+const DATA_KEY = "cheerAttendance_v1";
+const PASS_KEY = "cheerAttendancePassword_v1";
+let isAdmin = false;
+let data = JSON.parse(localStorage.getItem(DATA_KEY) || "null");
+if (!data) {
+  data = Array.from({length:10}, (_,r)=>({
+    row:r+1, locked:false,
+    people:Array.from({length:10},(_,i)=>({no:i+1,name:"",major:"",status:"pending",timestamp:""}))
+  }));
+  saveData();
+}
+if (!localStorage.getItem(PASS_KEY)) localStorage.setItem(PASS_KEY, DEFAULT_PASSWORD);
+function saveData(){localStorage.setItem(DATA_KEY,JSON.stringify(data));}
+function nowText(){return new Date().toLocaleString("th-TH",{dateStyle:"medium",timeStyle:"short"});}
+function msg(t){document.getElementById("message").textContent=t;}
+function auth(){if(!isAdmin){msg("กรุณาเข้าสู่ระบบผู้ดูแลก่อนดำเนินการ");return false;}return true;}
+function initSelects(){
+  const row=document.getElementById("personRow"), no=document.getElementById("personNo");
+  row.innerHTML="";no.innerHTML="";
+  for(let i=1;i<=10;i++){row.add(new Option("แถว "+i,i));no.add(new Option("คนที่ "+i,i));}
+}
+function render(){
+  const root=document.getElementById("rows");root.innerHTML="";
+  let checked=0,present=0;
+  data.forEach((r)=>{
+    const card=document.createElement("div");card.className="rowcard";
+    const head=document.createElement("div");head.className="rowhead";
+    head.innerHTML=`<span>แถวที่ ${r.row} ${r.locked?"🔒":""}</span><small>${r.locked?"ล็อกแล้ว":"ยังไม่ล็อก"}</small>`;
+    card.appendChild(head);
+    r.people.forEach(p=>{
+      if(p.status!=="pending")checked++;
+      if(p.status==="present")present++;
+      const line=document.createElement("div");line.className="person";
+      const n=document.createElement("span");n.className="num";n.textContent=String(p.no).padStart(2,"0");
+      const info=document.createElement("div");info.className="name";
+      info.textContent=p.name||"ยังไม่ได้ระบุชื่อ";
+      const meta=document.createElement("span");meta.className="meta";
+      meta.textContent=(p.major||"ไม่ระบุสาขา")+(p.timestamp?" · "+p.timestamp:"");
+      info.appendChild(meta);
+      let control;
+      if(r.locked){control=document.createElement("span");control.className="badge locked";control.textContent=p.status==="present"?"มาเข้าร่วม":p.status==="absent"?"ขาด":"ยังไม่เช็ค";}
+      else{
+        control=document.createElement("select");control.setAttribute("aria-label",`สถานะคนที่ ${p.no} แถว ${r.row}`);
+        [["pending","ยังไม่เช็ค"],["present","มา"],["absent","ขาด"]].forEach(([v,t])=>control.add(new Option(t,v)));
+        control.value=p.status;
+        control.disabled=!isAdmin;
+        control.addEventListener("change",()=>{if(!auth())return;p.status=control.value;p.timestamp=control.value==="pending"?"":nowText();saveData();render();});
+        control.className="badge "+p.status;
+      }
+      line.append(n,info,control);card.appendChild(line);
+    });
+    const actions=document.createElement("div");actions.className="actions";actions.style.padding="10px";
+    const lockBtn=document.createElement("button");lockBtn.className=r.locked?"muted":"success";lockBtn.textContent=r.locked?"🔒 ล็อกแล้ว":"บันทึกและล็อกแถวนี้";lockBtn.disabled=r.locked||!isAdmin;
+    lockBtn.addEventListener("click",()=>{
+      if(!auth()||r.locked)return;
+      if(!confirm(`ยืนยันบันทึกและล็อกข้อมูลแถวที่ ${r.row} ใช่หรือไม่? การล็อกนี้จะไม่สามารถปลดล็อกผ่านหน้าเว็บได้`))return;
+      r.people.forEach(p=>{if(p.status!=="pending"&&!p.timestamp)p.timestamp=nowText();});
+      r.locked=true;saveData();render();msg(`บันทึกและล็อกแถวที่ ${r.row} แล้ว`);
+    });
+    actions.appendChild(lockBtn);card.appendChild(actions);root.appendChild(card);
+  });
+  document.getElementById("total").textContent="100";
+  document.getElementById("checked").textContent=checked;
+  document.getElementById("present").textContent=present;
+  document.getElementById("percent").textContent=(present/100*100).toFixed(0)+"%";
+  document.getElementById("modeLabel").textContent=isAdmin?"🔓 โหมดผู้ดูแล":"🔒 โหมดดูข้อมูล";
+  document.getElementById("savePerson").disabled=!isAdmin;
+  document.getElementById("clearForm").disabled=!isAdmin;
+}
+document.getElementById("loginBtn").addEventListener("click",()=>{
+  const pass=document.getElementById("password").value;
+  if(pass===localStorage.getItem(PASS_KEY)){isAdmin=true;msg("เข้าสู่ระบบสำเร็จ");render();}
+  else msg("รหัสผ่านไม่ถูกต้อง");
+  document.getElementById("password").value="";
+});
+document.getElementById("logoutBtn").addEventListener("click",()=>{isAdmin=false;render();msg("ออกจากระบบแล้ว");});
+document.getElementById("changePassBtn").addEventListener("click",()=>{
+  if(!auth())return;
+  const old=prompt("กรอกรหัสผ่านปัจจุบัน");if(old!==localStorage.getItem(PASS_KEY)){msg("รหัสผ่านเดิมไม่ถูกต้อง");return;}
+  const next=prompt("ตั้งรหัสผ่านใหม่ (อย่างน้อย 4 ตัวอักษร)");if(!next||next.length<4){msg("รหัสผ่านใหม่ต้องมีอย่างน้อย 4 ตัวอักษร");return;}
+  localStorage.setItem(PASS_KEY,next);msg("เปลี่ยนรหัสผ่านแล้ว");
+});
+document.getElementById("savePerson").addEventListener("click",()=>{
+  if(!auth())return;
+  const row=Number(document.getElementById("personRow").value), no=Number(document.getElementById("personNo").value);
+  const r=data[row-1], p=r.people[no-1];
+  if(r.locked){msg("แถวนี้ถูกล็อกแล้ว ไม่สามารถแก้ไขรายชื่อได้");return;}
+  p.name=document.getElementById("personName").value.trim();
+  p.major=document.getElementById("personMajor").value.trim();
+  saveData();render();msg(`บันทึกรายชื่อแถว ${row} คนที่ ${no} แล้ว`);
+});
+document.getElementById("clearForm").addEventListener("click",()=>{document.getElementById("personName").value="";document.getElementById("personMajor").value="";});
+document.getElementById("resetBtn").addEventListener("click",()=>{
+  if(!auth())return;
+  const pass=prompt("ยืนยันรหัสผ่านเพื่อเริ่มข้อมูลใหม่");
+  if(pass!==localStorage.getItem(PASS_KEY)){msg("รหัสผ่านไม่ถูกต้อง");return;}
+  if(!confirm("คำเตือน: การล้างข้อมูลจะลบรายชื่อและสถานะทั้งหมด ต้องการดำเนินการต่อหรือไม่?"))return;
+  data=Array.from({length:10},(_,r)=>({row:r+1,locked:false,people:Array.from({length:10},(_,i)=>({no:i+1,name:"",major:"",status:"pending",timestamp:""}))}));
+  saveData();render();msg("ล้างข้อมูลแล้ว");
+});
+document.getElementById("exportBtn").addEventListener("click",()=>{
+  const rows=[["แถว","ลำดับ","ชื่อ-นามสกุล","สาขาวิชา","สถานะ","วันเวลาบันทึก","สถานะแถว"]];
+  data.forEach(r=>r.people.forEach(p=>rows.push([r.row,p.no,p.name,p.major,p.status==="present"?"มาเข้าร่วม":p.status==="absent"?"ขาด":"ยังไม่เช็ค",p.timestamp,r.locked?"ล็อกแล้ว":"ยังไม่ล็อก"])));
+  const csv="\uFEFF"+rows.map(row=>row.map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(",")).join("\r\n");
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
+  const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="ระบบเช็คชื่อสแตนเชียร์.csv";a.click();URL.revokeObjectURL(url);
+});
+initSelects();render();
+</script>
+</body>
+</html>
